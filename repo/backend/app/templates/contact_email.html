@@ -1,0 +1,132 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>New Message Notification</title>
+    <style type="text/css">
+        body { margin: 0; padding: 0; min-width: 100%; width: 100% !important; height: 100% !important; background-color: #121212; }
+        body, table, td, div, p, a { -webkit-font-smoothing: antialiased; text-size-adjust: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; line-height: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse !important; border-spacing: 0; }
+        img { border: 0; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+        @media only screen and (max-width: 480px) {
+            .mobile-padding { padding-left: 20px !important; padding-right: 20px !important; }
+            .mobile-wrapper { width: 100% !important; max-width: 100% !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #1E1E1E; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #1E1E1E;" role="presentation">
+        <tr>
+            <td align="center" style="padding: 40px 0;">
+                
+                <table border="0" cellpadding="0" cellspacing="0" width="600" class="mobile-wrapper" style="width: 600px; max-width: 600px; background-color: #000000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    
+                    <tr>
+                        <td height="6" style="background: linear-gradient(90deg, #ffd230 0%, #ff9100 100%); background-color: #ffcc0d; font-size: 0; line-height: 0;">&nbsp;</td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" class="mobile-padding" style="padding: 40px 40px 10px 40px;">
+                            
+                            <div style="margin-bottom: 25px;">
+                                <a href="https://edricd.com" target="_blank" style="text-decoration: none;">
+                                    <img src="https://storage.googleapis.com/bucket-edricd/images/logo/logo-light-for-email.gif" alt="edricd.com Logo" width="300" style="display: block; border: 0; outline: none; text-decoration: none; width: 300px; height: auto; font-family: sans-serif; color: #ffffff; font-size: 15px;" />
+                                </a>
+                            </div>
+                            <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; line-height: 1.4;">
+                                You got a new message from <span style="color: #ffcc0d;">edricd.com</span>!
+                            </h1>
+                            <p style="margin: 10px 0 0 0; font-size: 14px; color: #888888; font-weight: 400;">
+                                A visitor has submitted a form on your website.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="padding: 20px 40px;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td height="1" style="background-color: #333333; font-size: 0; line-height: 0;">&nbsp;</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td class="mobile-padding" style="padding: 0 40px 40px 40px;">
+                            
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                
+                                <tr>
+                                    <td style="padding-bottom: 20px;">
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #666666;">Name</p>
+                                        <div style="background-color: #252525; padding: 15px; border-radius: 6px; border-left: 3px solid #ffcc0d;">
+                                            <p style="margin: 0; font-size: 16px; color: #ffffff; font-weight: 500;">
+                                                {{ name }}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="padding-bottom: 20px;">
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #666666;">Email</p>
+                                        <div style="background-color: #252525; padding: 15px; border-radius: 6px; border-left: 3px solid #ffcc0d;">
+                                            <p style="margin: 0; font-size: 16px; color: #ffffff; font-weight: 500;">
+                                                {{ email }}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="padding-bottom: 20px;">
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #666666;">Phone</p>
+                                        <div style="background-color: #252525; padding: 15px; border-radius: 6px; border-left: 3px solid #ffcc0d;">
+                                            <p style="margin: 0; font-size: 16px; color: #ffffff; font-weight: 500;">
+                                               {{ phone }}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="padding-bottom: 0;">
+                                        <p style="margin: 0 0 5px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #666666;">Message</p>
+                                        <div style="background-color: #252525; padding: 20px; border-radius: 6px; border-left: 3px solid #ffcc0d;">
+                                            <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #dddddd;">
+                                                {{ message }}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="background-color: #000000; padding: 20px; border-top: 1px solid #333333;">
+                            <p style="margin: 0; font-size: 12px; color: #555555;">
+                                &copy; 2026 edricd.com All rights reserved.<br>
+                                Automated message sent from the website.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+                
+                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td height="40" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                    </tr>
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>
