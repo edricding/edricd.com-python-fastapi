@@ -1,13 +1,12 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import Optional
-from app.core.config import settings
-
+import os
 import smtplib
-import ssl
-from email.message import EmailMessage
+from email.mime.text import MIMEText
+from email.header import Header
 
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
 
 app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
 
@@ -21,63 +20,51 @@ if origins:
         allow_headers=["*"],
     )
 
+class ContactPayload(BaseModel):
+    name: str
+    email: str
+    message: str
+    phone: str | None = None
+
+EMAIL_TO = "d.singine@gmail.com"  # 固定收件人
+
 @app.get("/health")
 def health():
     return {"ok": True}
 
+@app.post("/contact")
+def contact(payload: ContactPayload):
+    smtp_host = os.getenv("SMTP_HOST", "")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER", "")
+    smtp_pass = os.getenv("SMTP_PASS", "")
 
-# ====== Contact API ======
-EMAIL_TO = "edricding0108@gmail.com"  # <-- constant receiver
+    if not smtp_host or not smtp_user or not smtp_pass:
+        raise HTTPException(status_code=500, detail="SMTP env not configured")
 
+    phone = payload.phone.strip() if payload.phone and payload.phone.strip() else "-"
 
-class ContactPayload(BaseModel):
-    name: str = Field(min_length=1)
-    email: str = Field(min_length=1)
-    message: str = Field(min_length=1)
-    phone: Optional[str] = None
-
-
-def send_contact_email(payload: ContactPayload) -> None:
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        raise RuntimeError("SMTP_USER/SMTP_PASSWORD not configured")
-
-    phone_value = payload.phone.strip() if payload.phone and payload.phone.strip() else "-"
-
-    subject = f"New message from {payload.name}"
+    subject = f"[edricd.com] New Contact Form - {payload.name}"
     body = (
-        f"Name: {payload.name}\n"
-        f"Email: {payload.email}\n"
-        f"Phone: {phone_value}\n\n"
-        f"Message:\n{payload.message}\n"
+        f"name: {payload.name}\n"
+        f"email: {payload.email}\n"
+        f"phone: {phone}\n"
+        f"message:\n{payload.message}\n"
     )
 
-    msg = EmailMessage()
-    msg["Subject"] = subject
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = Header(subject, "utf-8")
+    msg["From"] = smtp_user
     msg["To"] = EMAIL_TO
-    msg["From"] = settings.SMTP_FROM.strip() if settings.SMTP_FROM else settings.SMTP_USER
-    msg["Reply-To"] = payload.email  # 方便你直接点回复就是对方
-    msg.set_content(body)
 
-    context = ssl.create_default_context()
-
-    # 587: STARTTLS, 465: SSL
-    if int(settings.SMTP_PORT) == 465:
-        with smtplib.SMTP_SSL(settings.SMTP_HOST, int(settings.SMTP_PORT), context=context) as server:
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(msg)
-    else:
-        with smtplib.SMTP(settings.SMTP_HOST, int(settings.SMTP_PORT)) as server:
-            server.ehlo()
-            server.starttls(context=context)
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(msg)
-
-
-@app.post("/api/contact")
-def contact(payload: ContactPayload):
     try:
-        send_contact_email(payload)
-        return {"ok": True}
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=20) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_user, [EMAIL_TO], msg.as_string())
     except Exception as e:
-        # 生产环境你也可以换成日志记录 e，这里先返回统一错误
-        raise HTTPException(status_code=500, detail="Failed to send email")
+        raise HTTPException(status_code=500, detail=f"SMTP send failed: {e}")
+
+    return {"ok": True}

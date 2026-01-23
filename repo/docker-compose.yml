@@ -8,6 +8,10 @@ services:
       - CORS_ALLOW_ORIGINS=http://edricd.com,http://www.edricd.com
     networks:
       - web
+    env_file:
+      - .env
+    environment:
+      - CORS_ALLOW_ORIGINS=http://edricd.com,http://www.edricd.com
 
   nginx:
     image: nginx:alpine
