@@ -4,8 +4,8 @@ services:
     container_name: edricd-backend
     restart: unless-stopped
     environment:
-      # 你当前只有 http，所以先只放 http
-      - CORS_ALLOW_ORIGINS=http://edricd.com,http://www.edricd.com
+      # CORS origins for http/https
+      - CORS_ALLOW_ORIGINS=http://edricd.com,http://www.edricd.com,https://edricd.com,https://www.edricd.com
     networks:
       - web
     env_file:
@@ -22,7 +22,21 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certbot/www:/var/www/certbot:ro
+      - ./nginx/certbot/conf:/etc/letsencrypt:ro
       - ./frontend:/usr/share/nginx/html:ro
+    networks:
+      - web
+    command: /bin/sh -c "while :; do sleep 6h; nginx -s reload; done & nginx -g 'daemon off;'"
+
+  certbot:
+    image: certbot/certbot
+    container_name: edricd-certbot
+    restart: unless-stopped
+    volumes:
+      - ./nginx/certbot/www:/var/www/certbot
+      - ./nginx/certbot/conf:/etc/letsencrypt
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h; done"
     networks:
       - web
 
