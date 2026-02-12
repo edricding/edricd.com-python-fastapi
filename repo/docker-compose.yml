@@ -3,13 +3,51 @@ services:
     build: ./backend
     container_name: edricd-backend
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
     environment:
       # CORS origins for http/https
-      - CORS_ALLOW_ORIGINS=http://edricd.com,http://www.edricd.com,https://edricd.com,https://www.edricd.com
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://edricd.com,http://www.edricd.com,https://edricd.com,https://www.edricd.com}
+      # SMTP (contact form)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      # reCAPTCHA
+      RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:-}
+      RECAPTCHA_SECRET_KEY: ${RECAPTCHA_SECRET_KEY:-}
+      # DB settings reserved for backend integration
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-edricd}
+      DB_USER: ${DB_USER:-edricd}
+      DB_PASSWORD: ${DB_PASSWORD:-change_me_db_password}
     networks:
       - web
-    env_file:
-      - .env
+
+  mysql:
+    image: mysql:8.4
+    container_name: edricd-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me_root_password}
+      MYSQL_DATABASE: ${DB_NAME:-edricd}
+      MYSQL_USER: ${DB_USER:-edricd}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-change_me_db_password}
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - web
 
   nginx:
     image: nginx:alpine
@@ -53,3 +91,6 @@ services:
 networks:
   web:
     driver: bridge
+
+volumes:
+  mysql_data:
