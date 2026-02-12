@@ -267,6 +267,13 @@ function bindCreateUserActions() {
     return;
   }
 
+  if (submitBtn.dataset.createUserBound === "1") {
+    return;
+  }
+  submitBtn.dataset.createUserBound = "1";
+
+  const createUserApi = submitBtn.getAttribute("data-api") || "/api/users/create";
+
   submitBtn.addEventListener("click", function () {
     const usernameEl = document.getElementById("add-new-user-username");
     const passwordEl = document.getElementById("add-new-user-password");
@@ -280,10 +287,10 @@ function bindCreateUserActions() {
     const confirm = confirmEl ? confirmEl.value : "";
     const role = mapRoleValue(roleEl ? roleEl.id : "");
 
-    if (!username || !password || !confirm || !role) {
+    if (!username || !password || !confirm) {
       Swal.fire({
         title: "Missing fields",
-        text: "Please fill in username, password, and role.",
+        text: "Please fill in username and password.",
         icon: "warning",
       });
       return;
@@ -299,15 +306,19 @@ function bindCreateUserActions() {
     }
 
     submitBtn.disabled = true;
-    fetch("/api/users/create", {
+    const payload = {
+      username: username,
+      password: password,
+    };
+    if (role) {
+      payload.role = role;
+    }
+
+    fetch(createUserApi, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({
-        username: username,
-        password: password,
-        role: role,
-      }),
+      body: JSON.stringify(payload),
     })
       .then((res) => res.json())
       .then((data) => {
