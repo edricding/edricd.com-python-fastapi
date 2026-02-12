@@ -86,16 +86,29 @@ def verify_recaptcha(token: str, remoteip: str | None = None) -> None:
     if remoteip:
         payload["remoteip"] = remoteip
 
-    req = Request(
+    verify_urls = [
         "https://www.google.com/recaptcha/api/siteverify",
-        data=urlencode(payload).encode("utf-8"),
-        method="POST",
-    )
-    try:
-        with urlopen(req, timeout=10) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"reCAPTCHA verify failed: {exc}")
+        "https://www.recaptcha.net/recaptcha/api/siteverify",
+    ]
+    result = None
+    last_error = None
+
+    for verify_url in verify_urls:
+        req = Request(
+            verify_url,
+            data=urlencode(payload).encode("utf-8"),
+            method="POST",
+        )
+        try:
+            with urlopen(req, timeout=10) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+            break
+        except Exception as exc:
+            last_error = exc
+            continue
+
+    if result is None:
+        raise HTTPException(status_code=502, detail=f"reCAPTCHA verify failed: {last_error}")
 
     if not result.get("success"):
         raise HTTPException(status_code=400, detail="Captcha verification failed")

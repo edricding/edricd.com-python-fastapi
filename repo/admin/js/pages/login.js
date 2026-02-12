@@ -3,6 +3,10 @@
 
   var RECAPTCHA_TIMEOUT_MS = 15000;
   var RECAPTCHA_SCRIPT_ID = "google-recaptcha-script";
+  var RECAPTCHA_SCRIPT_URLS = [
+    "https://www.google.com/recaptcha/api.js?render=",
+    "https://www.recaptcha.net/recaptcha/api.js?render=",
+  ];
   var recaptchaSiteKey = "";
   var recaptchaReadyPromise = null;
   var isRedirecting = false;
@@ -84,13 +88,20 @@
   }
 
   function checkSessionReadyOnce() {
-    return fetch("/api/session/require", {
+    return fetch("/api/session/status", {
       method: "GET",
       credentials: "include",
       cache: "no-store",
     })
       .then(function (res) {
-        return res.status === 204;
+        return res
+          .json()
+          .catch(function () {
+            return {};
+          });
+      })
+      .then(function (data) {
+        return !!(data && data.loggedIn);
       })
       .catch(function () {
         return false;
@@ -132,6 +143,13 @@
     }
   }
 
+  function buildRecaptchaScriptUrls(siteKey) {
+    var encodedSiteKey = encodeURIComponent(siteKey);
+    return RECAPTCHA_SCRIPT_URLS.map(function (urlPrefix) {
+      return urlPrefix + encodedSiteKey;
+    });
+  }
+
   function loadRecaptchaScript(siteKey) {
     if (window.grecaptcha && typeof window.grecaptcha.execute === "function") {
       return Promise.resolve();
@@ -149,18 +167,32 @@
         return;
       }
 
-      var script = document.createElement("script");
-      script.id = RECAPTCHA_SCRIPT_ID;
-      script.src = "https://www.google.com/recaptcha/api.js?render=" + encodeURIComponent(siteKey);
-      script.async = true;
-      script.defer = true;
-      script.onload = function () {
-        resolve();
-      };
-      script.onerror = function () {
-        reject(new Error("Failed to load reCAPTCHA script"));
-      };
-      document.head.appendChild(script);
+      var scriptUrls = buildRecaptchaScriptUrls(siteKey);
+      var scriptIndex = 0;
+
+      function appendScript() {
+        if (scriptIndex >= scriptUrls.length) {
+          reject(new Error("Failed to load reCAPTCHA script"));
+          return;
+        }
+
+        var script = document.createElement("script");
+        script.id = RECAPTCHA_SCRIPT_ID;
+        script.src = scriptUrls[scriptIndex];
+        script.async = true;
+        script.defer = true;
+        script.onload = function () {
+          resolve();
+        };
+        script.onerror = function () {
+          script.remove();
+          scriptIndex += 1;
+          appendScript();
+        };
+        document.head.appendChild(script);
+      }
+
+      appendScript();
     });
   }
 
@@ -188,6 +220,10 @@
         }
         recaptchaSiteKey = key;
         return loadRecaptchaScript(key);
+      })
+      .catch(function (err) {
+        recaptchaReadyPromise = null;
+        throw err;
       });
 
     return recaptchaReadyPromise;
