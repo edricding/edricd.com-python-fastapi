@@ -56,6 +56,7 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+      - site2
     ports:
       - "80:80"
       - "443:443"
@@ -68,6 +69,15 @@ services:
     networks:
       - web
     command: /bin/sh -c "while :; do sleep 6h; nginx -s reload; done & nginx -g 'daemon off;'"
+
+  site2:
+    image: nginx:alpine
+    container_name: edricd-wagaga-site
+    restart: unless-stopped
+    volumes:
+      - ./wagaga:/usr/share/nginx/html:ro
+    networks:
+      - web
 
   certbot:
     image: certbot/certbot
