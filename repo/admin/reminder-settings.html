@@ -2,7 +2,7 @@
 <html lang="en">
 
 <meta charset="utf-8" />
-<title>Calendar | EDRICD</title>
+<title>Reminder Settings | EDRICD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
 <meta content="Coderthemes" name="author" />
@@ -27,6 +27,23 @@
 
 <!-- Sweet Alert css-->
 <link href="/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
+<style>
+    .preset-card {
+        border: 1px solid var(--ct-border-color);
+        transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+        cursor: pointer;
+    }
+
+    .preset-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(var(--ct-primary-rgb), .4);
+        box-shadow: 0 .35rem 1rem rgba(0, 0, 0, .08);
+    }
+
+    .preset-card .badge-color-preview {
+        min-width: 92px;
+    }
+</style>
 </head>
 
 <body>
@@ -200,35 +217,42 @@
                                 
                                 <ul class="nav nav-tabs nav-bordered mb-3">
                                     <li class="nav-item">
-                                        <a href="#home-b1" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
-                                            <i class="ti ti-home fs-18 me-md-1"></i>
-                                            <span class="d-none d-md-inline-block">Home</span>
+                                        <a href="#tab-event" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
+                                            <i class="ti ti-calendar-event fs-18 me-md-1"></i>
+                                            <span class="d-none d-md-inline-block">Event</span>
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="#profile-b1" data-bs-toggle="tab" aria-expanded="true" class="nav-link active">
-                                            <i class="ti ti-user-circle fs-18 me-md-1"></i>
-                                            <span class="d-none d-md-inline-block">Profile</span>
+                                        <a href="#tab-audio" data-bs-toggle="tab" aria-expanded="true" class="nav-link ">
+                                            <i class="ti ti-bell-ringing fs-18 me-md-1"></i>
+                                            <span class="d-none d-md-inline-block">Audio</span>
                                         </a>
                                     </li>
-                                    <li class="nav-item">
-                                        <a href="#settings-b1" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
-                                            <i class="ti ti-settings fs-18 me-md-1"></i>
-                                            <span class="d-none d-md-inline-block">Settings</span>
-                                        </a>
-                                    </li>
+                                    
                                 </ul>
 
                                 <div class="tab-content">
-                                    <div class="tab-pane" id="home-b1">
-                                        <p class="mb-0"><span class="px-1 rounded me-1 fw-semibold d-inline-block bg-info-subtle text-info float-start">H</span>Welcome to our website! We are dedicated to providing you with the best products and services to enhance your home. Whether you're looking to spruce up your living space with stylish furniture, create a cozy atmosphere with our selection of home decor, or tackle those DIY projects with our range of tools and supplies.</p>
+                                    <div class="tab-pane show active" id="tab-event">
+                                        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                                            <div class="flex-grow-1">
+                                                <h5 class="mb-1">Event Presets</h5>
+                                                <p class="text-muted mb-0">Click any preset to edit it.</p>
+                                            </div>
+                                            <button type="button" class="btn btn-primary" id="btn-add-preset">
+                                                <i class="ti ti-plus me-1"></i>
+                                                Add Preset
+                                            </button>
+                                        </div>
+                                        <div id="event-preset-list" class="row g-3">
+                                            <div class="col-12">
+                                                <div class="text-muted">Loading presets...</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="tab-pane show active" id="profile-b1">
-                                        <p class="mb-0"><span class="px-1 rounded me-1 fw-semibold d-inline-block bg-danger-subtle text-danger float-start">P</span> "Hi there! I'm a passionate individual who loves to explore new ideas and connect with like-minded people. My interests span a wide range of topics including technology, literature, travel, and fitness. I believe in the power of continuous learning and enjoy challenging myself to grow both personally and professionally.</p>
+                                    <div class="tab-pane" id="tab-audio">
+                                        <p class="text-muted mb-0">Audio settings will be added next.</p>
                                     </div>
-                                    <div class="tab-pane" id="settings-b1">
-                                        <p class="mb-0"><span class="px-1 rounded me-1 fw-semibold d-inline-block bg-secondary-subtle text-secondary float-start">S</span>In the heart of a bustling city lies a quaint little cafe, nestled between towering skyscrapers and historic buildings. Its cozy interior boasts warm, earthy tones accented with splashes of vibrant colors, creating a welcoming atmosphere that beckons passersby to step inside.</p>
-                                    </div>
+                                    
                                 </div>
 
                             </div> <!-- end card-body -->
@@ -239,7 +263,92 @@
                 </div>
                 <!-- end row -->
 
-               
+                 <!-- Preset MODAL -->
+                <div class="modal fade" id="preset-modal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <form class="needs-validation" id="preset-form" novalidate>
+                                <div class="modal-header">
+                                    <h4 class="modal-title" id="preset-modal-title">
+                                        Add Preset
+                                    </h4>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <input type="hidden" id="preset-id" />
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="mb-2">
+                                                <label class="control-label form-label" for="preset-name">Preset Name</label>
+                                                <input class="form-control" placeholder="Insert preset name" type="text" id="preset-name" required maxlength="120" />
+                                                <div class="invalid-feedback">Please provide a preset name</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="control-label form-label" for="preset-duration">Duration (minutes)</label>
+                                                <input class="form-control" type="number" id="preset-duration" min="1" max="1439" value="30" required />
+                                                <div class="invalid-feedback">Duration must be 1-1439 minutes</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="control-label form-label" for="preset-category">Category</label>
+                                                <select class="form-select" id="preset-category" required>
+                                                    <option value="bg-primary">Blue</option>
+                                                    <option value="bg-secondary">Gray Dark</option>
+                                                    <option value="bg-success">Green</option>
+                                                    <option value="bg-info">Cyan</option>
+                                                    <option value="bg-warning">Yellow</option>
+                                                    <option value="bg-danger">Red</option>
+                                                    <option value="bg-dark">Dark</option>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a category</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="control-label form-label" for="preset-audio">Audio</label>
+                                                <select class="form-select" id="preset-audio">
+                                                    <option value="">None</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <label class="control-label form-label" for="preset-sort-order">Sort Order</label>
+                                                <input class="form-control" type="number" id="preset-sort-order" min="0" max="65535" value="0" />
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="form-check form-switch mt-1">
+                                                <input class="form-check-input" type="checkbox" role="switch" id="preset-enabled" checked />
+                                                <label class="form-check-label" for="preset-enabled">Enabled</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                        <button type="button" class="btn btn-danger" id="btn-delete-preset">
+                                            Delete
+                                        </button>
+
+                                        <button type="button" class="btn btn-light ms-auto" data-bs-dismiss="modal">
+                                            Close
+                                        </button>
+
+                                        <button type="submit" class="btn btn-primary" id="btn-save-preset">
+                                            Save
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- end modal-content-->
+                    </div>
+                    <!-- end modal dialog-->
+                </div>
+                <!-- end modal-->
 
             </div> <!-- container -->
 
@@ -279,10 +388,8 @@
 
     <!-- Sweet Alerts js -->
     <script src="/vendor/sweetalert2/sweetalert2.min.js"></script>
-    <!-- Fullcalendar js -->
-    <script src="/vendor/fullcalendar/index.global.min.js"></script>
 
-    <script src="/js/reminder-calendar.js"></script>
+    <script src="/js/reminder-settings.js"></script>
     <script src="/js/BackendHttpRequest.js"></script>
     <script>
         (function () {
