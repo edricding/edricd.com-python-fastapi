@@ -5,11 +5,12 @@ import json
 import os
 import smtplib
 import time
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime, timedelta, timezone as dt_timezone
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
+from threading import Lock
 from urllib.parse import unquote, urlencode, urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
@@ -106,6 +107,8 @@ EMAIL_TO = "edricding0108@gmail.com"
 SESSION_COOKIE_NAME = "edricd_session"
 SESSION_TTL_SECONDS = 30 * 60
 WEEK_MINUTES = 7 * 24 * 60
+DEVICE_LAST_EVENT_KEY: dict[str, str] = {}
+DEVICE_LAST_EVENT_LOCK = Lock()
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 jinja_env = Environment(
@@ -594,6 +597,49 @@ def minute_to_hhmm(minute_of_day: int) -> str:
     hour = minute_of_day // 60
     minute = minute_of_day % 60
     return f"{hour:02d}:{minute:02d}"
+
+
+def resolve_current_and_next_slot(
+    slots: list[dict],
+    weekday: int,
+    minute_of_day: int,
+) -> tuple[dict | None, dict | None, int | None]:
+    now_week_minute = (weekday - 1) * 1440 + minute_of_day
+    current_slot = None
+    next_slot = None
+    min_delta = None
+
+    for slot in slots:
+        if slot["weekday"] == weekday and slot["start_min"] <= minute_of_day < slot["end_min"]:
+            current_slot = slot
+
+        slot_week_minute = (slot["weekday"] - 1) * 1440 + slot["start_min"]
+        delta = slot_week_minute - now_week_minute
+        if delta <= 0:
+            delta += WEEK_MINUTES
+        if min_delta is None or delta < min_delta:
+            min_delta = delta
+            next_slot = slot
+
+    return current_slot, next_slot, min_delta
+
+
+def build_event_occurrence_key(slot: dict, now_dt: datetime) -> str:
+    week_start_date = now_dt.date() - timedelta(days=now_dt.isoweekday() - 1)
+    event_date = week_start_date + timedelta(days=int(slot["weekday"]) - 1)
+    return (
+        f"{int(slot['id'])}:{event_date.isoformat()}:"
+        f"{int(slot['start_min'])}:{int(slot['end_min'])}"
+    )
+
+
+def is_first_time_for_device_event(device_id: str, event_key: str) -> bool:
+    with DEVICE_LAST_EVENT_LOCK:
+        last_event_key = DEVICE_LAST_EVENT_KEY.get(device_id)
+        is_first_time = last_event_key != event_key
+        if is_first_time:
+            DEVICE_LAST_EVENT_KEY[device_id] = event_key
+        return is_first_time
 
 
 @app.get("/api/health")
@@ -1332,23 +1378,11 @@ def reminder_current(request: FastAPIRequest):
         return {"success": False, "message": f"query current reminder failed: {exc}"}
 
     slots = [reminder_slot_row_to_dict(row) for row in slot_rows]
-
-    now_week_minute = (weekday - 1) * 1440 + minute_of_day
-    current_slot = None
-    next_slot = None
-    min_delta = None
-
-    for slot in slots:
-        if slot["weekday"] == weekday and slot["start_min"] <= minute_of_day < slot["end_min"]:
-            current_slot = slot
-
-        slot_week_minute = (slot["weekday"] - 1) * 1440 + slot["start_min"]
-        delta = slot_week_minute - now_week_minute
-        if delta <= 0:
-            delta += WEEK_MINUTES
-        if min_delta is None or delta < min_delta:
-            min_delta = delta
-            next_slot = slot
+    current_slot, next_slot, min_delta = resolve_current_and_next_slot(
+        slots,
+        weekday,
+        minute_of_day,
+    )
 
     return {
         "success": True,
@@ -1362,6 +1396,69 @@ def reminder_current(request: FastAPIRequest):
             "current_slot": current_slot,
             "next_slot": next_slot,
             "minutes_until_next": min_delta,
+        },
+    }
+
+
+@app.get("/api/reminder/device/current")
+def reminder_device_current(request: FastAPIRequest, device_id: str | None = None):
+    normalized_device_id = (
+        normalize_optional_text(device_id)
+        or normalize_optional_text(request.headers.get("x-device-id"))
+        or "default-device"
+    )
+
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                timezone_name = load_reminder_timezone(cursor)
+                normalized_timezone, tzinfo = resolve_timezone(timezone_name)
+                now_dt = datetime.now(tzinfo)
+                weekday = now_dt.isoweekday()
+                minute_of_day = now_dt.hour * 60 + now_dt.minute
+
+                cursor.execute(
+                    reminder_slot_select_sql()
+                    + """
+                    WHERE s.`is_enabled` = 1
+                    ORDER BY s.`weekday` ASC, s.`start_min` ASC, s.`sort_order` ASC, s.`id` ASC
+                    """
+                )
+                slot_rows = cursor.fetchall()
+    except Exception as exc:
+        return {"success": False, "message": f"query device current reminder failed: {exc}"}
+
+    slots = [reminder_slot_row_to_dict(row) for row in slot_rows]
+    current_slot, _, _ = resolve_current_and_next_slot(slots, weekday, minute_of_day)
+
+    event = None
+    is_first_time = False
+
+    if current_slot:
+        audio = current_slot.get("audio") if isinstance(current_slot.get("audio"), dict) else None
+        audio_url = normalize_optional_text(audio.get("gcs_url")) if audio else None
+        event_key = build_event_occurrence_key(current_slot, now_dt)
+        is_first_time = is_first_time_for_device_event(normalized_device_id, event_key)
+        event = {
+            "id": int(current_slot["id"]),
+            "name": current_slot.get("title") or "",
+            "audio_url": audio_url,
+            "weekday": int(current_slot["weekday"]),
+            "start_min": int(current_slot["start_min"]),
+            "end_min": int(current_slot["end_min"]),
+            "hhmm_start": minute_to_hhmm(int(current_slot["start_min"])),
+            "hhmm_end": minute_to_hhmm(int(current_slot["end_min"])),
+        }
+
+    return {
+        "success": True,
+        "message": "ok",
+        "data": {
+            "device_id": normalized_device_id,
+            "timezone": normalized_timezone,
+            "server_now": now_dt.isoformat(),
+            "event": event,
+            "is_first_time": is_first_time,
         },
     }
 
