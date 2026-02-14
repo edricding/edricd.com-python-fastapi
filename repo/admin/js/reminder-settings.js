@@ -93,6 +93,7 @@
 
   function ReminderSettings() {
     this.listEl = document.getElementById("event-preset-list");
+    this.tableBodyEl = document.getElementById("event-preset-table-body");
     this.btnAddPreset = document.getElementById("btn-add-preset");
 
     this.modalEl = document.getElementById("preset-modal");
@@ -116,7 +117,7 @@
   }
 
   ReminderSettings.prototype.init = function () {
-    if (!this.listEl || !this.formEl || !this.modalEl || !window.bootstrap) {
+    if (!this.listEl || !this.tableBodyEl || !this.formEl || !this.modalEl || !window.bootstrap) {
       return;
     }
 
@@ -136,7 +137,7 @@
 
     if (this.listEl) {
       this.listEl.addEventListener("click", function (event) {
-        var trigger = event.target.closest(".js-preset-item");
+        var trigger = event.target.closest("[data-preset-id]");
         if (!trigger) {
           return;
         }
@@ -248,13 +249,13 @@
   };
 
   ReminderSettings.prototype.renderPresetList = function () {
-    if (!this.listEl) {
+    if (!this.tableBodyEl) {
       return;
     }
 
     if (!this.presets.length) {
-      this.listEl.innerHTML =
-        '<div class="col-12"><div class="text-muted">No presets found. Click "Add Preset" to create one.</div></div>';
+      this.tableBodyEl.innerHTML =
+        '<tr><td colspan="8" class="text-muted">No presets found. Click "Add Preset" to create one.</td></tr>';
       return;
     }
 
@@ -285,37 +286,47 @@
           : '<span class="badge bg-success-subtle text-success">Enabled</span>';
 
       html +=
-        '<div class="col-12 col-md-6 col-xl-4">' +
-        '<div class="card preset-card js-preset-item" data-preset-id="' +
+        '<tr class="js-preset-row" data-preset-id="' +
         escapeHtml(String(presetId)) +
         '">' +
-        '<div class="card-body">' +
-        '<div class="d-flex justify-content-between align-items-start gap-2">' +
-        '<h5 class="card-title mb-1 text-truncate">' +
+        "<td>" +
+        escapeHtml(String(i + 1)) +
+        "</td>" +
+        "<td>" +
+        '<span class="fw-semibold">' +
         escapeHtml(name) +
-        "</h5>" +
-        enabledBadge +
-        "</div>" +
-        '<p class="text-muted mb-2">' +
+        "</span>" +
+        "</td>" +
+        "<td>" +
         escapeHtml(String(durationMin) + " min") +
-        "</p>" +
-        '<p class="text-muted mb-1"><i class="ti ti-music me-1"></i>' +
+        "</td>" +
+        "<td>" +
         escapeHtml(audioName) +
-        "</p>" +
-        '<p class="text-muted mb-2"><i class="ti ti-sort-ascending me-1"></i>Sort: ' +
-        escapeHtml(String(Number.isFinite(sortOrder) ? Math.floor(sortOrder) : 0)) +
-        "</p>" +
-        '<span class="badge badge-color-preview ' +
+        "</td>" +
+        "<td>" +
+        '<span class="badge preset-color-badge ' +
         escapeHtml(colorClass) +
         '">' +
         escapeHtml(colorClass) +
         "</span>" +
-        "</div>" +
-        "</div>" +
-        "</div>";
+        "</td>" +
+        "<td>" +
+        escapeHtml(String(Number.isFinite(sortOrder) ? Math.floor(sortOrder) : 0)) +
+        "</td>" +
+        "<td>" +
+        enabledBadge +
+        "</td>" +
+        '<td class="text-center text-muted">' +
+        '<a href="javascript:void(0);" class="link-reset fs-20 p-1" data-preset-id="' +
+        escapeHtml(String(presetId)) +
+        '">' +
+        '<i class="ti ti-edit"></i>' +
+        "</a>" +
+        "</td>" +
+        "</tr>";
     }
 
-    this.listEl.innerHTML = html || '<div class="col-12"><div class="text-muted">No presets found.</div></div>';
+    this.tableBodyEl.innerHTML = html || '<tr><td colspan="8" class="text-muted">No presets found.</td></tr>';
   };
 
   ReminderSettings.prototype.findPresetById = function (presetId) {

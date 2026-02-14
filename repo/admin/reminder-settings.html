@@ -28,20 +28,13 @@
 <!-- Sweet Alert css-->
 <link href="/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
 <style>
-    .preset-card {
-        border: 1px solid var(--ct-border-color);
-        transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-        cursor: pointer;
-    }
-
-    .preset-card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(var(--ct-primary-rgb), .4);
-        box-shadow: 0 .35rem 1rem rgba(0, 0, 0, .08);
-    }
-
-    .preset-card .badge-color-preview {
+    .preset-color-badge {
         min-width: 92px;
+        text-transform: uppercase;
+    }
+
+    #event-preset-list tbody tr.js-preset-row {
+        cursor: pointer;
     }
 </style>
 </head>
@@ -236,17 +229,33 @@
                                         <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
                                             <div class="flex-grow-1">
                                                 <h5 class="mb-1">Event Presets</h5>
-                                                <p class="text-muted mb-0">Click any preset to edit it.</p>
+                                                <p class="text-muted mb-0">Table style from basic tables, click row to edit.</p>
                                             </div>
                                             <button type="button" class="btn btn-primary" id="btn-add-preset">
                                                 <i class="ti ti-plus me-1"></i>
                                                 Add Preset
                                             </button>
                                         </div>
-                                        <div id="event-preset-list" class="row g-3">
-                                            <div class="col-12">
-                                                <div class="text-muted">Loading presets...</div>
-                                            </div>
+                                        <div id="event-preset-list" class="table-responsive-sm">
+                                            <table class="table table-hover mb-0 align-middle">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Name</th>
+                                                        <th>Duration</th>
+                                                        <th>Audio</th>
+                                                        <th>Color</th>
+                                                        <th>Sort</th>
+                                                        <th>Status</th>
+                                                        <th class="text-center">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="event-preset-table-body">
+                                                    <tr>
+                                                        <td colspan="8" class="text-muted">Loading presets...</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                     <div class="tab-pane" id="tab-audio">
