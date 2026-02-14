@@ -286,7 +286,7 @@
 
       html +=
         '<div class="col-12 col-md-6 col-xl-4">' +
-        '<div class="card preset-card h-100 js-preset-item" data-preset-id="' +
+        '<div class="card preset-card js-preset-item" data-preset-id="' +
         escapeHtml(String(presetId)) +
         '">' +
         '<div class="card-body">' +
