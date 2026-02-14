@@ -44,7 +44,7 @@
 }
 
 .audio-preview-player {
-    width: 220px;
+    width: 100%;
     max-width: 100%;
     height: 32px;
 }
