@@ -136,11 +136,11 @@
 
     if (this.listEl) {
       this.listEl.addEventListener("click", function (event) {
-        if (event.target.closest(".js-preset-enable-wrap")) {
+        if (event.target.closest(".js-preset-enable")) {
           return;
         }
 
-        var trigger = event.target.closest("[data-preset-id]");
+        var trigger = event.target.closest(".js-preset-edit-btn");
         if (!trigger) {
           return;
         }
@@ -300,7 +300,7 @@
       var isEnabled = preset.is_enabled !== false;
       var switchId = "preset-enable-" + String(presetId);
       var statusSwitch =
-        '<div class="form-check form-switch mb-0 js-preset-enable-wrap">' +
+        '<div class="form-check form-switch mb-0 preset-enable-switch">' +
         '<input class="form-check-input js-preset-enable" type="checkbox" role="switch" aria-label="Toggle preset enabled" id="' +
         escapeHtml(switchId) +
         '" data-preset-id="' +
@@ -342,7 +342,7 @@
         statusSwitch +
         "</td>" +
         '<td class="text-center text-muted">' +
-        '<a href="javascript:void(0);" class="link-reset fs-20 p-1" data-preset-id="' +
+        '<a href="javascript:void(0);" class="link-reset fs-20 p-1 js-preset-edit-btn" data-preset-id="' +
         escapeHtml(String(presetId)) +
         '">' +
         '<i class="ti ti-edit"></i>' +

@@ -37,26 +37,29 @@
         cursor: pointer;
     }
 
-    #event-preset-list .js-preset-enable-wrap {
+    #event-preset-list .preset-enable-switch {
         padding-left: 0;
         display: flex;
         justify-content: center;
         align-items: center;
     }
 
-    #event-preset-list .js-preset-enable-wrap .form-check-input {
+    #event-preset-list .preset-enable-switch .form-check-input {
         float: none;
         margin-left: 0;
         cursor: pointer;
     }
 
     #event-preset-list .js-preset-enable:not(:checked) {
-        border-color: #dc3545;
-        background-color: rgba(220, 53, 69, 0.45);
+        --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff'/%3e%3c/svg%3e");
+        background-color: var(--bs-danger, #dc3545);
+        border-color: var(--bs-danger, #dc3545);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
     #event-preset-list .js-preset-enable:not(:checked):focus {
-        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        border-color: var(--bs-danger, #dc3545);
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.35);
     }
 </style>
 </head>
