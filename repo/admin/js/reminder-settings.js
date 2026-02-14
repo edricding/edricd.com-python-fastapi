@@ -106,7 +106,6 @@
     this.presetCategoryEl = document.getElementById("preset-category");
     this.presetAudioEl = document.getElementById("preset-audio");
     this.presetSortOrderEl = document.getElementById("preset-sort-order");
-    this.presetEnabledEl = document.getElementById("preset-enabled");
 
     this.btnDeletePreset = document.getElementById("btn-delete-preset");
 
@@ -137,6 +136,10 @@
 
     if (this.listEl) {
       this.listEl.addEventListener("click", function (event) {
+        if (event.target.closest(".js-preset-enable-wrap")) {
+          return;
+        }
+
         var trigger = event.target.closest("[data-preset-id]");
         if (!trigger) {
           return;
@@ -146,6 +149,20 @@
           return;
         }
         self.openEditModal(presetId);
+      });
+
+      this.listEl.addEventListener("change", function (event) {
+        var switchEl = event.target.closest(".js-preset-enable");
+        if (!switchEl) {
+          return;
+        }
+
+        var presetId = Number(switchEl.getAttribute("data-preset-id"));
+        if (!Number.isFinite(presetId) || presetId < 1) {
+          return;
+        }
+
+        self.togglePresetEnabled(presetId, !!switchEl.checked, switchEl);
       });
     }
 
@@ -280,10 +297,25 @@
         preset && preset.audio && preset.audio.name
           ? String(preset.audio.name)
           : (preset.audio_id ? "Audio #" + String(preset.audio_id) : "None");
-      var enabledBadge =
-        preset.is_enabled === false
-          ? '<span class="badge bg-danger-subtle text-danger">Disabled</span>'
-          : '<span class="badge bg-success-subtle text-success">Enabled</span>';
+      var isEnabled = preset.is_enabled !== false;
+      var switchId = "preset-enable-" + String(presetId);
+      var statusSwitch =
+        '<div class="form-check form-switch mb-0 js-preset-enable-wrap">' +
+        '<input class="form-check-input js-preset-enable" type="checkbox" role="switch" id="' +
+        escapeHtml(switchId) +
+        '" data-preset-id="' +
+        escapeHtml(String(presetId)) +
+        '"' +
+        (isEnabled ? " checked" : "") +
+        ">" +
+        '<label class="form-check-label small ' +
+        (isEnabled ? "text-success" : "text-danger") +
+        '" for="' +
+        escapeHtml(switchId) +
+        '">' +
+        (isEnabled ? "Enabled" : "Disabled") +
+        "</label>" +
+        "</div>";
 
       html +=
         '<tr class="js-preset-row" data-preset-id="' +
@@ -314,7 +346,7 @@
         escapeHtml(String(Number.isFinite(sortOrder) ? Math.floor(sortOrder) : 0)) +
         "</td>" +
         "<td>" +
-        enabledBadge +
+        statusSwitch +
         "</td>" +
         '<td class="text-center text-muted">' +
         '<a href="javascript:void(0);" class="link-reset fs-20 p-1" data-preset-id="' +
@@ -337,6 +369,74 @@
       }
     }
     return null;
+  };
+
+  ReminderSettings.prototype.buildPayloadFromPreset = function (preset, override) {
+    var options = override || {};
+    var durationMin = Number(preset && preset.duration_min ? preset.duration_min : DEFAULT_DURATION_MIN);
+    if (!Number.isFinite(durationMin) || durationMin < 1 || durationMin > 1439) {
+      durationMin = DEFAULT_DURATION_MIN;
+    }
+
+    var payload = {
+      id: Number(preset.id),
+      name: String(preset.name || "Untitled").trim() || "Untitled",
+      duration_min: Math.floor(durationMin),
+      audio_id: toPositiveIntOrNull(preset.audio_id),
+      color: normalizeColorClass(preset.color || DEFAULT_COLOR),
+      is_enabled: preset.is_enabled !== false,
+      sort_order: toNonNegativeIntOrNull(preset.sort_order),
+    };
+
+    if (Object.prototype.hasOwnProperty.call(options, "is_enabled")) {
+      payload.is_enabled = !!options.is_enabled;
+    }
+
+    return payload;
+  };
+
+  ReminderSettings.prototype.togglePresetEnabled = function (presetId, isEnabled, switchEl) {
+    var self = this;
+    var preset = this.findPresetById(presetId);
+    if (!preset) {
+      if (switchEl) {
+        switchEl.checked = !isEnabled;
+      }
+      return;
+    }
+
+    var previousEnabled = preset.is_enabled !== false;
+    var payload = this.buildPayloadFromPreset(preset, { is_enabled: isEnabled });
+
+    if (switchEl) {
+      switchEl.disabled = true;
+    }
+
+    requestJson(PRESET_SAVE_API, "POST", payload)
+      .then(function (data) {
+        if (!data || !data.success) {
+          throw createApiError((data && data.message) || "Update status failed");
+        }
+
+        preset.is_enabled = !!isEnabled;
+        self.renderPresetList();
+      })
+      .catch(function (err) {
+        console.error("Toggle preset enabled failed", err);
+        if (switchEl) {
+          switchEl.checked = previousEnabled;
+        }
+        Swal.fire({
+          title: "Update Failed",
+          text: err && err.message ? err.message : "Update status failed",
+          icon: "error",
+        });
+      })
+      .finally(function () {
+        if (switchEl) {
+          switchEl.disabled = false;
+        }
+      });
   };
 
   ReminderSettings.prototype.resetFormState = function () {
@@ -372,9 +472,6 @@
     }
     if (this.presetSortOrderEl) {
       this.presetSortOrderEl.value = "";
-    }
-    if (this.presetEnabledEl) {
-      this.presetEnabledEl.checked = true;
     }
     if (this.btnDeletePreset) {
       this.btnDeletePreset.style.display = "none";
@@ -428,9 +525,6 @@
       var sortOrder = Number(preset.sort_order || 0);
       this.presetSortOrderEl.value = Number.isFinite(sortOrder) ? String(Math.floor(sortOrder)) : "0";
     }
-    if (this.presetEnabledEl) {
-      this.presetEnabledEl.checked = preset.is_enabled !== false;
-    }
     if (this.btnDeletePreset) {
       this.btnDeletePreset.style.display = "inline-block";
     }
@@ -457,12 +551,13 @@
       throw createApiError("Duration must be between 1 and 1439 minutes");
     }
 
+    var currentPreset = this.selectedPresetId ? this.findPresetById(this.selectedPresetId) : null;
     var payload = {
       name: name,
       duration_min: Math.floor(durationMin),
       color: normalizeColorClass(this.presetCategoryEl.value || DEFAULT_COLOR),
       audio_id: toPositiveIntOrNull(this.presetAudioEl ? this.presetAudioEl.value : ""),
-      is_enabled: !!(this.presetEnabledEl && this.presetEnabledEl.checked),
+      is_enabled: currentPreset ? currentPreset.is_enabled !== false : true,
       sort_order: toNonNegativeIntOrNull(this.presetSortOrderEl ? this.presetSortOrderEl.value : ""),
     };
 
