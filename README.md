@@ -6,6 +6,7 @@
 
 ```
 repo/
+├─ admin/                   # 后台管理 - 提供各种个人api
 ├─ backend/                 # FastAPI 后端
 │  ├─ app/
 │  │  ├─ core/
